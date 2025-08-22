@@ -1,0 +1,230 @@
+# Security Scanning Configuration for Ultra-Fast AI Model
+# Comprehensive security pipeline with cargo audit, trivy, gosec
+
+[global]
+# Overall security configuration
+security_level = "high"
+fail_on_high_severity = true
+fail_on_medium_severity = false
+fail_on_low_severity = false
+max_allowed_vulnerabilities = 0
+scan_timeout_seconds = 600
+
+# Project-specific settings
+project_name = "ultra-fast-ai-model"
+version = "0.1.0"
+security_contact = "security@ultrafast-ai.dev"
+
+[rust]
+# Cargo audit configuration
+enabled = true
+audit_db_update = true
+ignore_yanked = false
+ignore_unpatched = false
+
+# Specific advisories to ignore (if necessary)
+ignore_advisories = [
+    # Example: "RUSTSEC-2020-0001"
+]
+
+# Dependencies to exclude from audit
+exclude_dependencies = [
+    # Example: "dev-dependency-name"
+]
+
+# Custom audit configuration
+[rust.audit]
+format = "json"
+output_file = "target/security/rust-audit.json"
+vulnerability_threshold = "low"
+stale_db_error = true
+
+[go]
+# Gosec configuration for Go MCP interfaces
+enabled = true
+scan_tests = true
+scan_vendor = false
+
+# Gosec rules configuration
+[go.rules]
+# Enable all security rules
+all_rules = true
+
+# Specific rules to exclude (if necessary)
+exclude_rules = [
+    # Example: "G204" # Subprocess with variable
+]
+
+# Specific files/directories to exclude
+exclude_paths = [
+    "vendor/",
+    "test/fixtures/",
+]
+
+# Custom gosec configuration
+[go.gosec]
+format = "json"
+output_file = "target/security/go-gosec.json"
+severity_threshold = "medium"
+confidence_threshold = "medium"
+
+[container]
+# Trivy configuration for container/dependency scanning
+enabled = true
+scan_dockerfile = true
+scan_dependencies = true
+scan_secrets = true
+scan_misconfigurations = true
+
+# Trivy scan targets
+scan_targets = [
+    "Dockerfile",
+    "docker-compose.yml",
+    "Cargo.toml",
+    "go.mod",
+    "build.zig",
+]
+
+# Vulnerability database
+[container.trivy]
+update_db = true
+skip_db_update = false
+cache_dir = ".cache/trivy"
+format = "json"
+output_file = "target/security/trivy-scan.json"
+
+# Severity levels to report
+severity_levels = ["CRITICAL", "HIGH", "MEDIUM"]
+
+# License scanning
+license_scanning = true
+license_threshold = "medium"
+
+[secrets]
+# Secret scanning configuration
+enabled = true
+scan_git_history = true
+scan_all_files = true
+
+# File patterns to include in secret scanning
+include_patterns = [
+    "*.rs",
+    "*.go",
+    "*.zig",
+    "*.toml",
+    "*.yaml",
+    "*.yml",
+    "*.md",
+    "*.sh",
+    "*.ps1",
+]
+
+# File patterns to exclude
+exclude_patterns = [
+    "target/",
+    ".git/",
+    "vendor/",
+    "node_modules/",
+    "*.log",
+]
+
+# Secret patterns to detect
+secret_patterns = [
+    "api[_-]?key",
+    "secret[_-]?key",
+    "access[_-]?token",
+    "auth[_-]?token",
+    "password",
+    "private[_-]?key",
+    "-----BEGIN",
+]
+
+[static_analysis]
+# Additional static analysis configuration
+enabled = true
+
+# Rust-specific static analysis
+[static_analysis.rust]
+clippy_enabled = true
+clippy_args = ["-D", "warnings", "-D", "clippy::all"]
+
+# Security-focused lints
+security_lints = [
+    "clippy::ptr_arg",
+    "clippy::mem_forget",
+    "clippy::mem_leak",
+    "clippy::cast_ptr_alignment",
+    "clippy::suspicious",
+]
+
+# Go-specific static analysis
+[static_analysis.go]
+go_vet_enabled = true
+golint_enabled = true
+ineffassign_enabled = true
+misspell_enabled = true
+
+[reporting]
+# Security report configuration
+generate_report = true
+report_format = "html"
+report_output = "target/security/security-report.html"
+include_remediation = true
+
+# Report sections
+include_summary = true
+include_details = true
+include_recommendations = true
+include_compliance = true
+
+# Compliance frameworks
+compliance_frameworks = [
+    "OWASP-Top-10",
+    "CWE-Top-25",
+    "NIST-Cybersecurity",
+]
+
+[notifications]
+# Security notification configuration
+enabled = false
+webhook_url = ""
+slack_channel = ""
+email_recipients = []
+
+# Notification triggers
+notify_on_new_vulnerability = true
+notify_on_high_severity = true
+notify_on_scan_failure = true
+
+[cache]
+# Security scanning cache configuration
+enabled = true
+cache_dir = ".cache/security"
+cache_ttl_hours = 24
+cleanup_old_cache = true
+
+[integration]
+# CI/CD integration settings
+github_actions = true
+gitlab_ci = false
+jenkins = false
+
+# Security gates
+block_on_critical = true
+block_on_high = false
+warn_on_medium = true
+ignore_low = false
+
+# Custom thresholds per environment
+[integration.environments]
+[integration.environments.development]
+fail_on_high = false
+fail_on_medium = false
+
+[integration.environments.staging]
+fail_on_high = true
+fail_on_medium = false
+
+[integration.environments.production]
+fail_on_high = true
+fail_on_medium = true

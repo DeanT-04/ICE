@@ -1,0 +1,124 @@
+# Cargo Mutants Configuration for Ultra-Fast AI Model
+# Target: ≥80% mutation score for comprehensive testing
+# Security-focused mutation testing configuration
+
+# Global timeout for mutation testing (seconds)
+timeout_multiplier = 2.0  # Increased for security tests
+
+# Skip external dependencies and generated code
+exclude_globs = [
+    "target/**",
+    "build.rs",
+    "benches/**",  # Skip benchmarks as they're performance-focused
+    "src/tests/**", # Don't mutate test code itself
+]
+
+# Focus mutation testing on core model components
+examine_globs = [
+    "src/model/**",      # Core neural network implementations
+    "src/training/**",   # Training and optimization logic
+    "src/utils/**",      # Utility functions and monitoring
+    "src/lib.rs",        # Library root
+    "src/main.rs",       # Main application entry point
+]
+
+# Skip certain function calls that are difficult to test meaningfully
+skip_calls = [
+    "std::panic::panic_any",
+    "std::process::exit",
+    "std::thread::sleep",
+    "log::*",           # Logging calls
+    "println",          # Debug prints
+    "eprintln",         # Error prints
+    "dbg",              # Debug macros
+    "panic",            # Explicit panics
+    "unreachable",      # Unreachable code
+    "unimplemented",    # Not yet implemented
+    "todo",             # TODO markers
+    "assert_eq",        # Test assertions
+    "assert_ne",
+    "assert",
+]
+
+# Critical functions that should be mutation tested for security
+examine_calls = [
+    "forward",           # Neural network forward passes
+    "validate",          # Input validation
+    "sanitize",          # Input sanitization
+    "check_bounds",      # Bounds checking
+    "encrypt",           # Cryptographic functions
+    "hash",              # Hash functions
+    "authenticate",      # Authentication
+    "authorize",         # Authorization
+]
+
+# Test tool configuration
+test_tool = "cargo"
+additional_cargo_test_args = [
+    "--", 
+    "--test-threads=1",
+    "--no-capture",      # Show test output for debugging
+]
+
+# Output format for CI integration
+output = "json"
+
+# Features configuration for security testing
+features = ["cpu-optimized"]
+no_default_features = false
+
+# Error values to test (security-focused)
+error_values = [
+    "0", "1", "-1", 
+    "None", "Some", 
+    "Err", "Ok",
+    "false", "true",
+    "f32::NAN", "f32::INFINITY", 
+    "f32::MAX", "f32::MIN",
+    "usize::MAX", "0usize",
+]
+
+# Security-critical mutation patterns
+[mutations]
+# Enable all mutation types for comprehensive testing
+binary_operators = true
+unary_operators = true
+if_conditions = true
+while_conditions = true
+for_loops = true
+match_arms = true
+function_calls = true
+function_returns = true
+literals = true
+variable_assignments = true
+
+# Specific security-focused mutations
+[mutations.custom]
+# Replace security-critical constants
+constants = [
+    { from = "0.0", to = "f32::NAN" },
+    { from = "1.0", to = "f32::INFINITY" },
+    { from = "true", to = "false" },
+    { from = "false", to = "true" },
+    { from = "Some", to = "None" },
+    { from = "Ok", to = "Err" },
+]
+
+# Test timeout configuration
+[timeouts]
+default = 60.0     # Default timeout in seconds
+test_discovery = 30.0
+build = 120.0      # Increased for complex builds
+
+# Performance constraints for mutation testing
+[constraints]
+max_memory_mb = 8192   # 8GB memory limit
+max_runtime_sec = 3600 # 1 hour maximum runtime
+max_mutations = 10000  # Limit total mutations
+
+# Reporting configuration
+[reporting]
+include_diff = true
+include_logs = true
+detailed_summary = true
+fail_fast = false      # Continue testing even after failures
