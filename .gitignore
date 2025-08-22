@@ -1,0 +1,380 @@
+# ==============================================================================
+# AI MODEL PROJECT .GITIGNORE
+# Comprehensive exclusions for Rust, Zig, Go, and AI model artifacts
+# ==============================================================================
+
+# ==============================================================================
+# RUST EXCLUSIONS
+# ==============================================================================
+
+# Cargo build artifacts
+/target/
+/Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# Cargo cache
+~/.cargo/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==============================================================================
+# ZIG EXCLUSIONS  
+# ==============================================================================
+
+# Zig build artifacts
+zig-out/
+zig-cache/
+.zig-cache/
+
+# Zig object files
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+
+# ==============================================================================
+# GO EXCLUSIONS
+# ==============================================================================
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test binary, built with `go test -c`
+*.test
+
+# Go coverage files
+*.out
+*.prof
+
+# Go dependency directories
+vendor/
+
+# Go module cache
+go.sum.lock
+
+# ==============================================================================
+# AI MODEL & TRAINING EXCLUSIONS
+# ==============================================================================
+
+# Model checkpoints and weights
+/models/
+/checkpoints/
+*.pth
+*.pt
+*.ckpt
+*.h5
+*.pkl
+*.model
+*.weights
+*.onnx
+*.tflite
+
+# Training logs and metrics
+/logs/
+/runs/
+/wandb/
+/tensorboard/
+*.log
+training_*.json
+metrics_*.csv
+
+# Large datasets (keep fixtures)
+/datasets/
+/data/
+*.parquet
+*.hdf5
+*.arrow
+!__fixtures__/datasets/
+
+# GPU/CUDA artifacts
+*.cubin
+*.ptx
+
+# ==============================================================================
+# MCP & CACHE EXCLUSIONS
+# ==============================================================================
+
+# MCP cache (24-hour cache as per rules)
+.cache/
+/cache/
+*.cache
+
+# Temporary MCP responses (keep committed fixtures)
+temp_mcp/
+!__fixtures__/mcp/
+
+# ==============================================================================
+# PERFORMANCE & PROFILING
+# ==============================================================================
+
+# Profiling data
+*.prof
+*.memprof
+*.cpuprof
+perf.data*
+*.trace
+
+# Benchmark results (keep for comparison)
+/bench_results/
+criterion_results/
+!benchmarks/baseline/
+
+# Energy monitoring logs
+powertop.log
+energy_*.log
+
+# ==============================================================================
+# SECURITY & SECRETS
+# ==============================================================================
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.p12
+
+# API keys and tokens
+secrets/
+.secrets
+*.token
+api_keys.json
+
+# Security scan results
+audit_results/
+trivy_results/
+security_scan.json
+
+# ==============================================================================
+# DOCKER & DEPLOYMENT
+# ==============================================================================
+
+# Docker artifacts
+.dockerignore.backup
+docker-compose.override.yml
+*.tar
+*.tar.gz
+
+# Deployment secrets
+deployment_config.prod.yml
+kubernetes_secrets.yml
+
+# ==============================================================================
+# OPERATING SYSTEM
+# ==============================================================================
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ==============================================================================
+# DEVELOPMENT TOOLS
+# ==============================================================================
+
+# IDE configurations
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.idea/
+*.sublime-*
+.atom/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*.rej
+
+# Editor swap files
+*.swp
+*.swo
+.*.sw?
+
+# ==============================================================================
+# BUILD & COMPILATION
+# ==============================================================================
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# ==============================================================================
+# TESTING & COVERAGE
+# ==============================================================================
+
+# Test coverage reports
+coverage/
+htmlcov/
+.coverage
+.nyc_output
+*.gcov
+*.gcda
+*.gcno
+
+# Test artifacts
+test_results/
+integration_test_data/
+mutation_test_results/
+
+# Fuzzing artifacts
+fuzz/corpus/
+fuzz/artifacts/
+crash-*
+leak-*
+timeout-*
+
+# ==============================================================================
+# DOCUMENTATION
+# ==============================================================================
+
+# Generated documentation
+/doc/
+/docs/build/
+site/
+
+# LaTeX auxiliary files
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+
+# ==============================================================================
+# QODDI & CI/CD
+# ==============================================================================
+
+# Qoddi logs and overrides
+.qoddi-progress.log
+.qoddi-overrides.log
+qoddi_build.log
+
+# CI/CD artifacts
+.github/workflows/generated/
+ci_cache/
+build_artifacts/
+
+# ==============================================================================
+# PROJECT SPECIFIC
+# ==============================================================================
+
+# SBOM files (keep in dedicated directory)
+/sbom/
+!sbom/.gitkeep
+
+# Local configuration overrides
+config.local.toml
+settings.local.json
+
+# Development databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Network captures
+*.pcap
+*.pcapng
+
+# ==============================================================================
+# KEEP THESE IMPORTANT FILES
+# ==============================================================================
+
+# Always include these patterns
+!.gitignore
+!.gitkeep
+!README.md
+!LICENSE
+!Cargo.toml
+!build.zig
+!go.mod
+!Dockerfile
+!docker-compose.yml
+!.qoddi.yaml
+
+# Include fixture directories but not their large contents
+!__fixtures__/
+!__fixtures__/**/.gitkeep
+
+# Include test directories
+!tests/
+!src/
+
+# ==============================================================================
+# END OF .GITIGNORE
+# ==============================================================================
