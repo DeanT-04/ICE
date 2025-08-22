@@ -46,7 +46,8 @@ pub mod utils;
 pub use model::{
     UltraFastModel, ModelConfig, InferenceConfig,
     core::HybridLayer,
-    agentic::AgentPool,
+    agentic::{AgenticCoordinator, TaskConfig, VotingStrategy},
+    fusion::{FusionLayer, FusionConfig},
 };
 
 pub use training::{
@@ -90,6 +91,12 @@ pub enum UltraFastAiError {
     #[error("Validation error: {0}")]
     ValidationError(String),
     
+    #[error("Optimization error: {0}")]
+    OptimizationError(String),
+    
+    #[error("Dataset error: {0}")]
+    DatasetError(String),
+    
     #[error("MCP integration error: {0}")]
     McpError(String),
     
@@ -109,6 +116,25 @@ pub enum UltraFastAiError {
 
 /// Result type alias
 pub type Result<T> = std::result::Result<T, UltraFastAiError>;
+
+/// From implementations for easy error conversion
+impl From<String> for UltraFastAiError {
+    fn from(msg: String) -> Self {
+        UltraFastAiError::ValidationError(msg)
+    }
+}
+
+impl From<&str> for UltraFastAiError {
+    fn from(msg: &str) -> Self {
+        UltraFastAiError::ValidationError(msg.to_string())
+    }
+}
+
+impl From<tokio::task::JoinError> for UltraFastAiError {
+    fn from(err: tokio::task::JoinError) -> Self {
+        UltraFastAiError::ValidationError(format!("Task join error: {}", err))
+    }
+}
 
 /// Global configuration
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]

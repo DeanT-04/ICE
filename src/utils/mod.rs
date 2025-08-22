@@ -3,13 +3,14 @@
 pub mod perf;
 pub mod config;
 pub mod schemas;
+pub mod energy;
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use crate::Result;
 
 /// Load configuration from file
-pub fn load_config(path: &PathBuf) -> Result<serde_json::Value> {
+pub fn load_config(_path: &PathBuf) -> Result<serde_json::Value> {
     // TODO: Implement actual config loading
     Ok(serde_json::json!({
         "model": {

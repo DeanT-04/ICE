@@ -224,8 +224,8 @@ async fn run_inference(args: InferArgs, config: serde_json::Value) -> Result<()>
     let power_consumption = perf_monitor.get_power_consumption();
     
     // Validate latency requirement (<100ms)
-    if inference_time.as_millis() > 100 {
-        warn!("Inference time {}ms exceeds 100ms target", inference_time.as_millis());
+    if inference_time > 100.0 {
+        warn!("Inference time {:.1}ms exceeds 100ms target", inference_time);
     }
     
     // Validate power requirement (<50W)
@@ -238,7 +238,7 @@ async fn run_inference(args: InferArgs, config: serde_json::Value) -> Result<()>
         "json" => {
             let output = serde_json::json!({
                 "result": result,
-                "inference_time_ms": inference_time.as_millis(),
+                "inference_time_ms": inference_time,
                 "power_consumption_w": power_consumption,
                 "task_type": args.task
             });
@@ -246,8 +246,8 @@ async fn run_inference(args: InferArgs, config: serde_json::Value) -> Result<()>
         },
         "text" | _ => {
             println!("{}", result);
-            info!("Inference completed in {}ms, {:.1}W", 
-                 inference_time.as_millis(), power_consumption);
+            info!("Inference completed in {:.1}ms, {:.1}W", 
+                 inference_time, power_consumption);
         }
     }
     
@@ -265,8 +265,8 @@ async fn run_training(args: TrainArgs, config: serde_json::Value) -> Result<()> 
     
     // Validate VRAM constraint
     let vram_usage = perf_monitor.get_vram_usage();
-    if vram_usage > 8.0 {
-        error!("VRAM usage {:.1}GB exceeds 8GB RTX 2070 Ti limit", vram_usage);
+    if vram_usage > 8192 { // 8GB in MB
+        error!("VRAM usage {}MB exceeds 8GB RTX 2070 Ti limit", vram_usage);
         return Err(anyhow::anyhow!("VRAM constraint violation"));
     }
     
@@ -291,12 +291,13 @@ async fn run_training(args: TrainArgs, config: serde_json::Value) -> Result<()> 
     
     let training_time = perf_monitor.end_training_timer();
     
-    // Validate 24-hour constraint
-    if training_time.as_secs() > 24 * 3600 {
-        warn!("Training time {}h exceeds 24h target", training_time.as_secs() / 3600);
+    // Validate 24-hour constraint (convert ms to hours)
+    let training_hours = training_time / (1000.0 * 3600.0);
+    if training_hours > 24.0 {
+        warn!("Training time {:.1}h exceeds 24h target", training_hours);
     }
     
-    info!("Training completed in {:.2}h", training_time.as_secs_f64() / 3600.0);
+    info!("Training completed in {:.2}h", training_hours);
     
     Ok(())
 }
