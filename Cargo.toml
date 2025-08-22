@@ -52,6 +52,9 @@ env_logger = "0.11"
 rand = "0.8"
 rand_distr = "0.4"
 
+# Regex for text processing
+regex = "1.10"
+
 # Mathematical operations
 num-traits = "0.2"
 num-complex = "0.4"
@@ -76,19 +79,22 @@ sysinfo = "0.30"
 
 [dev-dependencies]
 # Testing framework
-proptest = "1.4"
+rstest = "0.18"          # Fixture-based testing
+proptest = "1.4"          # Property-based testing
+quickcheck = "1.0"        # Another property-based testing framework
 criterion = { version = "0.5", features = ["html_reports"] }
-insta = "1.34"
-tokio-test = "0.4"
+insta = "1.34"             # Snapshot testing
+tokio-test = "0.4"        # Async testing utilities
+tempfile = "3.8"          # Temporary file management
+mockall = "0.12"          # Mocking framework
+test-case = "3.3"         # Parameterized testing
+serial_test = "3.0"       # Sequential test execution
 
-# Coverage and mutation testing
+# Coverage testing
 cargo-tarpaulin = "0.27"
 
 # Fuzzing
 cargo-fuzz = "0.11"
-
-# Security auditing
-cargo-audit = "0.20"
 
 [build-dependencies]
 # FFI bindings for Zig kernels
@@ -110,14 +116,14 @@ crate-type = ["cdylib", "rlib"]
 
 # Benchmark configuration
 [[bench]]
-name = "inference_bench"
+name = "inference_benchmarks"
 harness = false
-path = "benches/inference.rs"
+path = "benches/inference_benchmarks.rs"
 
 [[bench]]
-name = "energy_bench"
+name = "energy_benchmarks"
 harness = false
-path = "benches/energy.rs"
+path = "benches/energy_benchmarks.rs"
 
 # Feature flags
 [features]
