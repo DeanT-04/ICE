@@ -12,6 +12,10 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use crate::{Result, UltraFastAiError};
 
+// Re-export key components from core and fusion modules
+pub use core::{HybridLayer as CoreHybridLayer, SnnConfig, SsmConfig, LiquidConfig};
+pub use fusion::{FusionLayer, FusionConfig};
+
 /// Main model structure
 pub struct UltraFastModel {
     config: ModelConfig,
@@ -70,8 +74,8 @@ impl UltraFastModel {
     }
 }
 
-/// Hybrid layer placeholder
-pub struct HybridLayer;
+/// Hybrid layer placeholder (replaced by core::HybridLayer)
+// pub struct HybridLayer;
 
 /// Agent pool placeholder
 pub struct AgentPool;
