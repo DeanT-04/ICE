@@ -20,6 +20,9 @@ help:
 	@echo "  benchmarks      - Run benchmark validation tests (HumanEval & GSM8K)"
 	@echo "  benchmarks-quick - Run quick benchmark validation"
 	@echo "  benchmarks-full - Run comprehensive benchmark validation"
+	@echo "  training-validation - Run standard training validation (15-30 min)"
+	@echo "  training-validation-quick - Run quick training validation (5-10 min)"
+	@echo "  training-validation-full - Run FULL 24-hour training validation"
 	@echo "  validate-all    - Run complete validation pipeline (all checks)"
 	@echo "  install-tools   - Install required testing tools"
 	@echo "  install-security-tools - Install security scanning tools"
@@ -203,8 +206,42 @@ benchmarks-full:
 		cargo test --test benchmarks --release -- --nocapture; \
 	fi
 
-# Complete validation pipeline (all checks + benchmarks)
-validate-all: test coverage mutants security benchmarks
+# Training validation testing
+training-validation:
+	@echo "⏱️ Running standard training validation (15-30 minutes)..."
+	mkdir -p target/validation_reports
+	@if command -v pwsh >/dev/null 2>&1; then \
+		pwsh -ExecutionPolicy Bypass -File scripts/run_training_validation.ps1 -TestType standard -SaveReports; \
+	else \
+		echo "Running standard training validation tests..."; \
+		cargo test --test training_time_validation_tests --release -- --nocapture; \
+	fi
+
+# Quick training validation (5-10 minutes)
+training-validation-quick:
+	@echo "⚡ Running quick training validation (5-10 minutes)..."
+	mkdir -p target/validation_reports
+	@if command -v pwsh >/dev/null 2>&1; then \
+		pwsh -ExecutionPolicy Bypass -File scripts/run_training_validation.ps1 -TestType quick -SaveReports; \
+	else \
+		echo "Running quick training validation tests..."; \
+		cargo test test_rapid_training_simulation --release; \
+	fi
+
+# Full 24-hour training validation (WARNING: 24+ hours)
+training-validation-full:
+	@echo "🕰️ Running FULL 24-hour training validation (WARNING: 24+ hours)..."
+	@echo "⚠️ This will run for up to 24 hours and consume significant resources!"
+	mkdir -p target/validation_reports
+	@if command -v pwsh >/dev/null 2>&1; then \
+		pwsh -ExecutionPolicy Bypass -File scripts/run_training_validation.ps1 -TestType full -SaveReports; \
+	else \
+		echo "Running full 24-hour training validation..."; \
+		cargo test test_full_24_hour_training_validation --release --ignored -- --nocapture; \
+	fi
+
+# Complete validation pipeline (all checks + benchmarks + training validation)
+validate-all: test coverage mutants security benchmarks training-validation-quick
 	@echo "✅ Complete validation pipeline completed!"
 	@echo "📋 Comprehensive Results:"
 	@echo "   - Unit Tests: ✅"
@@ -212,6 +249,7 @@ validate-all: test coverage mutants security benchmarks
 	@echo "   - Mutation Testing: target/mutants/reports/mutation_report.md"
 	@echo "   - Security Scanning: $(SECURITY_OUTPUT_DIR)/security-report.html"
 	@echo "   - Benchmark Validation: target/benchmarks/benchmark_report.md"
+	@echo "   - Training Validation: target/validation_reports/"
 
 # Advanced mutation testing with specific configurations
 mutants-advanced:

@@ -59,6 +59,10 @@ regex = "1.10"
 num-traits = "0.2"
 num-complex = "0.4"
 
+# Cryptographic hashing and time handling
+sha2 = "0.10"
+chrono = { version = "0.4", features = ["serde"] }
+
 # HTTP client for MCP
 reqwest = { version = "0.11", features = ["json", "rustls-tls"], optional = true }
 rustls = { version = "0.22", optional = true }
