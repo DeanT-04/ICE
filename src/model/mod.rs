@@ -7,6 +7,7 @@ pub mod agentic;
 pub mod fusion;
 pub mod mcp;
 pub mod validation;
+pub mod mcp_cache_manager;
 
 use std::path::PathBuf;
 use serde::{Deserialize, Serialize};

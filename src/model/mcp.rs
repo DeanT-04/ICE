@@ -6,7 +6,6 @@
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
-use tokio::time::timeout;
 use crate::Result;
 
 /// MCP server types
@@ -172,7 +171,7 @@ impl McpClient {
         // Check if MCP integration is enabled
         #[cfg(feature = "mcp-integration")]
         {
-            let response = timeout(
+            let response = tokio::time::timeout(
                 Duration::from_millis(request.timeout_ms),
                 self.http_client.post(&endpoint)
                     .json(&request.params)
@@ -373,6 +372,23 @@ impl McpClient {
         self.execute(request).await
     }
 
+    /// Fetch data from data source with optional query
+    pub async fn fetch_data(&mut self, data_source: &str, query: Option<serde_json::Value>) -> Result<McpResponse> {
+        let request = McpRequest {
+            server_type: McpServerType::Data,
+            method: "fetch_data".to_string(),
+            params: serde_json::json!({
+                "source": data_source,
+                "query": query
+            }),
+            timeout_ms: self.config.default_timeout_ms,
+            cache_ttl_hours: self.config.default_cache_ttl_hours,
+            retry_count: 2,
+        };
+        
+        self.execute(request).await
+    }
+
     /// Run code analysis tool
     pub async fn analyze_code(&mut self, code: &str, language: &str) -> Result<McpResponse> {
         let request = McpRequest {
@@ -414,6 +430,30 @@ impl McpClient {
             timeout_ms: self.config.default_timeout_ms,
             cache_ttl_hours: self.config.default_cache_ttl_hours,
             retry_count: 2,
+        };
+        
+        self.execute(request).await
+    }
+
+    /// Call external API (alias for api_query for compatibility)
+    pub async fn call_external_api(&mut self, endpoint: &str, params: serde_json::Value) -> Result<McpResponse> {
+        self.api_query(endpoint, params).await
+    }
+
+    /// Call API with optional params
+    pub async fn call_api(&mut self, endpoint: &str, params: Option<serde_json::Value>) -> Result<McpResponse> {
+        self.api_query(endpoint, params.unwrap_or(serde_json::json!({}))).await
+    }
+
+    /// Call tool with optional args
+    pub async fn call_tool(&mut self, tool_name: &str, args: Option<serde_json::Value>) -> Result<McpResponse> {
+        let request = McpRequest {
+            server_type: McpServerType::Tools,
+            method: tool_name.to_string(),
+            params: args.unwrap_or(serde_json::json!({})),
+            timeout_ms: self.config.default_timeout_ms,
+            cache_ttl_hours: 1, // Short cache for tools
+            retry_count: 1,
         };
         
         self.execute(request).await

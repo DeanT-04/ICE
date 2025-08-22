@@ -4,6 +4,7 @@ pub mod perf;
 pub mod config;
 pub mod schemas;
 pub mod energy;
+pub mod mcp_cache;
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
