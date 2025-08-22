@@ -572,8 +572,22 @@ impl PerformanceMonitor {
             return 0.0;
         }
         
-        let index = (percentile / 100.0 * (sorted_values.len() - 1) as f32).round() as usize;
-        sorted_values[index.min(sorted_values.len() - 1)]
+        if sorted_values.len() == 1 {
+            return sorted_values[0];
+        }
+        
+        // Using proper percentile calculation with linear interpolation
+        let n = sorted_values.len() as f32;
+        let rank = (percentile / 100.0) * (n - 1.0);
+        let lower_index = rank.floor() as usize;
+        let upper_index = lower_index + 1;
+        let weight = rank.fract();
+        
+        if upper_index >= sorted_values.len() {
+            sorted_values[lower_index]
+        } else {
+            sorted_values[lower_index] * (1.0 - weight) + sorted_values[upper_index] * weight
+        }
     }
 
     /// Export metrics to file
@@ -742,9 +756,18 @@ mod tests {
     fn test_percentile_calculation() {
         let values = vec![10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0];
         
-        assert_eq!(PerformanceMonitor::percentile(&values, 50.0), 50.0);
-        assert_eq!(PerformanceMonitor::percentile(&values, 90.0), 90.0);
-        assert_eq!(PerformanceMonitor::percentile(&values, 95.0), 100.0);
+        let p50 = PerformanceMonitor::percentile(&values, 50.0);
+        let p90 = PerformanceMonitor::percentile(&values, 90.0);
+        let p95 = PerformanceMonitor::percentile(&values, 95.0);
+        
+        // Using proper percentile calculation with linear interpolation:
+        // For 10 elements (indices 0-9):
+        // 50th percentile = index 4.5 → (50.0 + 60.0) / 2 = 55.0
+        // 90th percentile = index 8.1 → 90.0 * 0.9 + 100.0 * 0.1 = 91.0
+        // 95th percentile = index 8.55 → 90.0 * 0.45 + 100.0 * 0.55 = 95.5
+        assert_eq!(p50, 55.0);
+        assert_eq!(p90, 91.0);
+        assert_eq!(p95, 95.5);
     }
 
     #[test]

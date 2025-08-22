@@ -1,0 +1,15 @@
+{
+  "avg_latency_ms": 0.0,
+  "p50_latency_ms": 0.0,
+  "p90_latency_ms": 0.0,
+  "p95_latency_ms": 0.0,
+  "p99_latency_ms": 0.0,
+  "max_latency_ms": 0.0,
+  "avg_energy_w": 0.0,
+  "peak_energy_w": 0.0,
+  "total_energy_wh": 0.0,
+  "avg_memory_mb": 6615,
+  "peak_memory_mb": 5550,
+  "efficiency_score": 1.0,
+  "constraint_violations": 0
+}

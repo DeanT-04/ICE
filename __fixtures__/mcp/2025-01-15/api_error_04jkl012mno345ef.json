@@ -1,0 +1,38 @@
+{
+  "id": "api_error_04jkl012mno345ef",
+  "operation_type": "api",
+  "target": "/models/invalid-model",
+  "request": {
+    "method": "GET",
+    "path": "/models/invalid-model",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer token123",
+      "user-agent": "ultra-fast-ai/1.0"
+    },
+    "body": null
+  },
+  "response": {
+    "error": {
+      "code": "MODEL_NOT_FOUND",
+      "message": "The requested model 'invalid-model' was not found",
+      "details": {
+        "model_id": "invalid-model",
+        "available_models": ["ultra-fast-v1", "hybrid-snn-v1"],
+        "suggestion": "Use GET /models to list available models"
+      },
+      "timestamp": "2025-01-15T16:45:12Z",
+      "request_id": "req_8f7e6d5c4b3a2918"
+    }
+  },
+  "metadata": {
+    "created_at": "2025-01-15T16:45:12Z",
+    "created_by": "ultra-fast-ai",
+    "description": "Model not found error response for invalid model request",
+    "expected_response_time_ms": 25,
+    "status_code": 404,
+    "is_error": true,
+    "version": "1.0"
+  },
+  "tags": ["error", "api", "model-not-found", "404", "validation"]
+}
