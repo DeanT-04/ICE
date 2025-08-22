@@ -1,9 +1,8 @@
 const std = @import("std");
-const Builder = std.Build;
 
 /// Build configuration for ultra-fast AI model Zig kernels
 /// Provides FFI support for Rust integration and optimized neural network operations
-pub fn build(b: *Builder) void {
+pub fn build(b: *std.Build) void {
     // Target configuration - optimize for CPU performance
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{
@@ -11,37 +10,40 @@ pub fn build(b: *Builder) void {
     });
 
     // Kernel library - shared object for FFI
-    const kernels_lib = b.addSharedLibrary(.{
+    const kernels_lib = b.addLibrary(.{
         .name = "ultra_fast_kernels",
-        .root_source_file = .{ .path = "src/kernels/lib.zig" },
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/kernels/lib.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+        .linkage = .dynamic,
+        .version = .{ .major = 1, .minor = 0, .patch = 0 },
     });
-
-    // Enable position-independent code for shared library
-    kernels_lib.force_pic = true;
     
     // Optimization flags for neural network performance
-    kernels_lib.bundle_compiler_rt = true;
-    kernels_lib.strip = false; // Keep debug info for development
+    // kernels_lib.bundle_compiler_rt = true; // Not available in 0.15.1
     
     // Export symbols for FFI
-    kernels_lib.export_symbol_names = &.{
-        "snn_activate",
-        "snn_spike_train",
-        "matrix_multiply_sparse", 
-        "matrix_quantize_4bit",
-        "sparse_mask_apply",
-        "energy_monitor_start",
-        "energy_monitor_end",
-    };
+    // kernels_lib.export_symbol_names = &.{  // Not available in 0.15.1
+    //     "snn_activate",
+    //     "snn_spike_train",
+    //     "matrix_multiply_sparse", 
+    //     "matrix_quantize_4bit",
+    //     "sparse_mask_apply",
+    //     "energy_monitor_start",
+    //     "energy_monitor_end",
+    // };
 
     // Static library for linking with Rust
-    const kernels_static = b.addStaticLibrary(.{
+    const kernels_static = b.addLibrary(.{
         .name = "ultra_fast_kernels_static",
-        .root_source_file = .{ .path = "src/kernels/lib.zig" },
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/kernels/lib.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+        .linkage = .static,
     });
 
     // Install artifacts
@@ -54,18 +56,21 @@ pub fn build(b: *Builder) void {
     
     // Test suite for all kernels
     const kernel_tests = b.addTest(.{
-        .name = "kernel_tests",
-        .root_source_file = .{ .path = "src/kernels/test.zig" },
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/kernels/test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
     // Benchmark suite
     const kernel_benchmarks = b.addExecutable(.{
         .name = "kernel_benchmarks", 
-        .root_source_file = .{ .path = "src/kernels/bench.zig" },
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/kernels/bench.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
     // Build steps
@@ -74,10 +79,12 @@ pub fn build(b: *Builder) void {
     lib_step.dependOn(&kernels_static.step);
 
     const test_step = b.step("test", "Run kernel tests");
-    test_step.dependOn(&kernel_tests.step);
+    const test_run = b.addRunArtifact(kernel_tests);
+    test_step.dependOn(&test_run.step);
 
     const bench_step = b.step("bench", "Run kernel benchmarks");
-    bench_step.dependOn(&kernel_benchmarks.step);
+    const bench_run = b.addRunArtifact(kernel_benchmarks);
+    bench_step.dependOn(&bench_run.step);
 
     // Default build includes everything
     b.default_step.dependOn(lib_step);
