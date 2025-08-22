@@ -1,0 +1,376 @@
+name: Mutation Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run mutation testing weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  MUTATION_SCORE_TARGET: 80
+
+jobs:
+  mutation-testing:
+    name: Mutation Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    
+    strategy:
+      matrix:
+        include:
+          - component: "core"
+            path: "src/model/core.rs"
+            target_score: 90
+          - component: "fusion" 
+            path: "src/model/fusion.rs"
+            target_score: 85
+          - component: "training"
+            path: "src/training/"
+            target_score: 80
+          - component: "utils"
+            path: "src/utils/"
+            target_score: 75
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        components: rustfmt, clippy
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Install cargo-mutants
+      run: |
+        cargo install --locked cargo-mutants@24.11.0
+
+    - name: Verify project compilation
+      run: |
+        cargo check --all-targets
+        cargo test --all --no-run
+
+    - name: Run baseline tests
+      run: |
+        cargo test --all --verbose
+
+    - name: Run mutation testing - ${{ matrix.component }}
+      run: |
+        mkdir -p target/mutants
+        cargo mutants \
+          --config mutants.toml \
+          --examine ${{ matrix.path }} \
+          --timeout 300 \
+          --jobs 2 \
+          --output target/mutants/${{ matrix.component }}_results.json \
+          --baseline skip \
+          --in-place
+
+    - name: Parse mutation score
+      id: mutation-score
+      run: |
+        if [ -f target/mutants/${{ matrix.component }}_results.json ]; then
+          SCORE=$(grep -o '"mutation_score":[0-9.]*' target/mutants/${{ matrix.component }}_results.json | cut -d: -f2 | head -1)
+          echo "score=$SCORE" >> $GITHUB_OUTPUT
+          echo "Component: ${{ matrix.component }}"
+          echo "Mutation Score: $SCORE%"
+          echo "Target: ${{ matrix.target_score }}%"
+        else
+          echo "score=0" >> $GITHUB_OUTPUT
+          echo "❌ Results file not found"
+        fi
+
+    - name: Validate mutation score
+      run: |
+        SCORE="${{ steps.mutation-score.outputs.score }}"
+        TARGET="${{ matrix.target_score }}"
+        
+        echo "Validating mutation score..."
+        echo "Component: ${{ matrix.component }}"
+        echo "Score: $SCORE%"
+        echo "Target: $TARGET%"
+        
+        if [ "$(echo "$SCORE >= $TARGET" | bc -l)" = "1" ]; then
+          echo "✅ Mutation score target achieved!"
+        else
+          echo "❌ Mutation score below target"
+          echo "::warning::Mutation score for ${{ matrix.component }} is $SCORE%, below target of $TARGET%"
+        fi
+
+    - name: Upload mutation testing results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: mutation-results-${{ matrix.component }}
+        path: |
+          target/mutants/${{ matrix.component }}_results.json
+          target/mutants/html/
+        retention-days: 30
+
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const score = '${{ steps.mutation-score.outputs.score }}';
+          const target = '${{ matrix.target_score }}';
+          const component = '${{ matrix.component }}';
+          const passed = parseFloat(score) >= parseFloat(target);
+          
+          const body = `## Mutation Testing Results - ${component}
+          
+          | Metric | Value |
+          |--------|-------|
+          | Component | \`${component}\` |
+          | Mutation Score | ${score}% |
+          | Target Score | ${target}% |
+          | Status | ${passed ? '✅ PASSED' : '❌ FAILED'} |
+          
+          ${passed ? 
+            '🎉 Great job! The mutation testing target was achieved.' : 
+            '⚠️ Consider adding more comprehensive tests to improve the mutation score.'
+          }
+          
+          <details>
+          <summary>What is mutation testing?</summary>
+          
+          Mutation testing introduces small changes (mutations) to your code and checks if your tests can detect these changes. A higher mutation score indicates more comprehensive tests that can catch subtle bugs.
+          
+          **Recommendations for improvement:**
+          - Add more edge case tests
+          - Improve test assertions
+          - Consider property-based testing
+          - Review surviving mutants in the detailed report
+          </details>`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });
+
+  comprehensive-mutation-testing:
+    name: Comprehensive Mutation Testing
+    runs-on: ubuntu-latest
+    needs: mutation-testing
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[full-mutation]')
+    timeout-minutes: 240
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install testing tools
+      run: |
+        cargo install --locked cargo-mutants@24.11.0
+        cargo install --locked cargo-tarpaulin
+
+    - name: Run comprehensive tests
+      run: |
+        cargo test --all --verbose
+
+    - name: Generate test coverage
+      run: |
+        mkdir -p target/coverage
+        cargo tarpaulin \
+          --out Html --out Json \
+          --output-dir target/coverage \
+          --timeout 120 \
+          --verbose
+
+    - name: Run comprehensive mutation testing
+      run: |
+        mkdir -p target/mutants/reports
+        cargo mutants \
+          --config mutants.toml \
+          --timeout 600 \
+          --jobs 2 \
+          --output target/mutants/comprehensive_results.json \
+          --html-dir target/mutants/html
+
+    - name: Generate comprehensive report
+      run: |
+        OVERALL_SCORE=$(grep -o '"mutation_score":[0-9.]*' target/mutants/comprehensive_results.json | cut -d: -f2 | head -1)
+        
+        cat > target/mutants/reports/ci_summary.md << EOF
+        # Comprehensive Mutation Testing Report
+        
+        ## Summary
+        - **Overall Mutation Score**: ${OVERALL_SCORE}%
+        - **Target**: ≥${MUTATION_SCORE_TARGET}%
+        - **Status**: $([ "$(echo "$OVERALL_SCORE >= $MUTATION_SCORE_TARGET" | bc -l)" = "1" ] && echo "✅ PASSED" || echo "❌ NEEDS IMPROVEMENT")
+        - **Date**: $(date)
+        - **Commit**: ${{ github.sha }}
+        
+        ## Quality Gates
+        - **Minimum Mutation Score**: ${MUTATION_SCORE_TARGET}%
+        - **Core Components Target**: 90%
+        - **Training Components Target**: 80%
+        - **Utility Components Target**: 75%
+        
+        ## Files Analyzed
+        - Core neural network implementations
+        - Model fusion logic
+        - Training and optimization
+        - Performance monitoring
+        - Energy management
+        
+        ## Recommendations
+        $([ "$(echo "$OVERALL_SCORE >= $MUTATION_SCORE_TARGET" | bc -l)" = "1" ] && echo "✅ All quality gates passed!" || echo "Consider improving test coverage for better mutation detection.")
+        EOF
+
+    - name: Upload comprehensive results
+      uses: actions/upload-artifact@v3
+      with:
+        name: comprehensive-mutation-results
+        path: |
+          target/mutants/
+          target/coverage/
+        retention-days: 90
+
+    - name: Create GitHub Release on success
+      if: github.event_name == 'schedule' && success()
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: mutation-report-${{ github.run_number }}
+        release_name: Weekly Mutation Testing Report
+        body_path: target/mutants/reports/ci_summary.md
+        draft: false
+        prerelease: false
+
+  mutation-regression-check:
+    name: Mutation Regression Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Install cargo-mutants
+      run: |
+        cargo install --locked cargo-mutants@24.11.0
+
+    - name: Get changed files
+      id: changed-files
+      run: |
+        CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '\.rs$' | head -20)
+        echo "Changed Rust files:"
+        echo "$CHANGED_FILES"
+        echo "files<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Run targeted mutation testing
+      if: steps.changed-files.outputs.files != ''
+      run: |
+        mkdir -p target/mutants
+        
+        # Run mutation testing only on changed files
+        while IFS= read -r file; do
+          if [ -f "$file" ] && [[ "$file" == src/* ]]; then
+            echo "Running mutation testing on: $file"
+            cargo mutants \
+              --config mutants.toml \
+              --examine "$file" \
+              --timeout 180 \
+              --jobs 2 \
+              --output "target/mutants/$(basename "$file" .rs)_results.json" \
+              --baseline skip || true
+          fi
+        done <<< "${{ steps.changed-files.outputs.files }}"
+
+    - name: Comment with targeted results
+      if: steps.changed-files.outputs.files != ''
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          let results = [];
+          const resultsDir = 'target/mutants';
+          
+          if (fs.existsSync(resultsDir)) {
+            const files = fs.readdirSync(resultsDir);
+            for (const file of files) {
+              if (file.endsWith('_results.json')) {
+                try {
+                  const content = fs.readFileSync(path.join(resultsDir, file), 'utf8');
+                  const data = JSON.parse(content);
+                  if (data.mutation_score !== undefined) {
+                    results.push({
+                      file: file.replace('_results.json', '.rs'),
+                      score: data.mutation_score
+                    });
+                  }
+                } catch (e) {
+                  console.log(`Could not parse ${file}`);
+                }
+              }
+            }
+          }
+          
+          if (results.length > 0) {
+            let body = `## 🧬 Mutation Testing Results for Changed Files\n\n`;
+            body += `| File | Mutation Score | Status |\n`;
+            body += `|------|----------------|--------|\n`;
+            
+            for (const result of results) {
+              const status = result.score >= 75 ? '✅ Good' : '⚠️ Needs Improvement';
+              body += `| \`${result.file}\` | ${result.score}% | ${status} |\n`;
+            }
+            
+            body += `\n**Target**: ≥75% for changed files\n`;
+            body += `\n_This is a targeted mutation test run for files changed in this PR._`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+          }

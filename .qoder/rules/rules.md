@@ -2,177 +2,152 @@
 trigger: always_on
 alwaysApply: true
 
+
+
 ---
-================================================================================PROJECT QODDI AI MODEL RULES – ZERO-HALLUCINATION EDITIONVersion: 2025-08-22.0Purpose: Single source of truth for all AI activity in this repo, governing the development of a hyper-small, ultra-fast, CPU-running AI model (non-transformer-based, agentic style) with expertise in software development, project management, context engineering, and prompt engineering. The model rivals 2025-era models (Claude, GPT, DeepSeek, Kimi, Qwen) in versatility, targeting <100M parameters, 10-50W inference, and training on a single RTX 2070 Ti, using small datasets (<1GB).Scope:   Qoddi chat, agentic workflows, inline fixes, debugger, MCP servers. Qoddi’s platform (https://docs.qoder.com/) automates containerized builds, CI/CD, and agentic task decomposition for rapid, error-free development.Philosophy: “If the AI can’t produce correct, minimal, secure code on the first try, the prompt or spec is underspecified.” Decompose tasks into bite-size pieces (<50 LoC, <1 hour) to minimize errors/hallucinations and enable parallel agentic progression via Qoddi.
-0  IDENTITY & CONSTRAINTS
-lang                 = "Rust (primary for safety/performance), Zig (low-level kernels for SNN ops), Go (concurrency for agent spawning/MCP interfaces)"runtime              = "Native CPU executable (no GPU dependency post-training)"platform             = "Standalone binary, cross-compilable for Linux/Windows/macOS/ARM via Cargo/Zig, deployable via Qoddi Docker containers"package_mgr          = "Cargo (Rust), Zig build system, Go modules"test_runner          = "Cargo test (Rust), Zig test, Go test + criterion-rs for benchmarks"e2e_runner           = "Custom Rust benchmarks for inference speed/energy + agentic task simulation"security_pipeline    = "Cargo audit + clippy (Rust), Zig safety analysis, Go vet + gosec, Trivy for Qoddi Docker images"deploy_target        = "Qoddi containerized deployment (Docker), cross-compiled binaries for edge devices"infrastructure       = "Docker Compose for local training, Qoddi for prod deployment, no cloud infra unless via MCP"mcp_servers          = [  "mcp-server-api",     # External API calls (e.g., GitHub, library docs)  "mcp-server-tools",   # Coding tools (linters, compilers, Git)  "mcp-server-data",    # Dataset access/augmentation  "mcp-server-feedback" # Self-improvement loops]
-1  PROMPT ENGINEERING CONTRACT
-ai_tone              = "terse, RFC-2119, deterministic, coding-focused"max_tokens           = 400  # Concise for CPU efficiencytemperature          = 0.0  # Zero for reproducibility, zero hallucinationstop_p                = 0.0deterministic_seed   = 42prompt_validator     = "schemars (Rust), zig-test for Zig, gojsonschema (Go)"  # Compile-time validate promptsprompt_linter        = "clippy + custom lints (Rust), zig fmt, go vet"  # Enforce code/prompt consistencyforbidden_words      = ["maybe", "perhaps", "should", "TODO", "hallucinate"]required_patterns    = ["// SAFETY: reason:", "/* tested by: file.rs */", "// MCP: delegated to server X", "/// Doc comment for all public APIs"]
-2  MCP USAGE RULES
+Universal Project Rules
+Version: 2025-08-22.0Purpose: Define a standardized set of rules applicable to any project, ensuring consistency, quality, and efficiency across all development activities.Scope: All project-related activities, including coding, testing, deployment, and collaboration.Philosophy: “Produce correct, minimal, and secure outputs on the first attempt, with clear specifications driving all decisions.”
+0. IDENTITY & CONSTRAINTS
 
-Every coding task/feature MUST start with an MCP-driven discovery:
-mcp-server-data for datasets (e.g., HumanEval, synthetic Rust/Zig snippets).
-mcp-server-tools for tool integration (e.g., cargo check, zig build, go build).
-mcp-server-api for external resources (e.g., GitHub repos, API docs).
-mcp-server-feedback for self-evolution (e.g., genetic algo updates).
+Project Scope: Clearly define the project’s purpose, deliverables, and boundaries at the outset.
+Team Roles: Assign and document roles (e.g., developers, testers, reviewers) to avoid ambiguity.
+Tooling: Use standardized, industry-accepted tools for development, testing, and deployment, ensuring compatibility across environments.
+Version Control: Use a single source of truth (e.g., Git) with a defined branching strategy (e.g., Gitflow, trunk-based development).
+Environment: Define development, staging, and production environments with consistent configurations.
 
+1. SPECIFICATION & PLANNING CONTRACT
 
-Cache MCP calls 24h in .cache/mcp (git-ignored); fallback to internal logic if offline.
-Store MCP results as JSON fixtures in __fixtures__/mcp/YYYY-MM-DD/ for reproducibility.
-Delegate to MCP only for external data/tools (e.g., library versions, linters); prefer internal agent spawning for code generation.
-
-3  ZERO-HALLUCINATION SAFEGUARDS
-
-All AI output (code, model weights, configs) must pass:
-Type-check (cargo check --all-features, zig build-obj, go build)
-Lint (cargo clippy -- -D warnings, zig fmt, go vet)
-Test (cargo test --all, zig test, go test)
-Benchmark diff (cargo criterion --save-baseline for speed/energy, <100ms inference)
+Tone: Use clear, precise, and deterministic language in all specifications and documentation (e.g., RFC-2119 style: MUST, SHOULD, MAY).
+Validation: All specifications must be validated at creation using predefined schemas or templates.
+Forbidden Practices: Avoid vague terms (e.g., “maybe,” “possibly,” “later”) in requirements or planning documents.
+Required Documentation: Every feature or change must include:
+A clear description of functionality.
+Acceptance criteria.
+Reference to related specs or tests.
 
 
-If any step fails, regenerate with stricter prompt or decompose task further.
-Inline comments must reference spec, test file, or MCP fixture (e.g., // See __fixtures__/mcp/2025-08-22/api.json).
-No TODO/FIXME; spawn agent to resolve or file GitHub issue with ai-ambiguous label.
 
-4  SIMPLEST-SOLUTION POLICY
+2. DISCOVERY & RESEARCH RULES
 
-Prefer Rust stdlib over crates; use Zig stdlib for kernels, Go stdlib for concurrency.
-Write modules <50 LoC; split if larger.
-Avoid abstractions until duplication ≥ 3×.
-Favor composition (Rust traits, Zig structs) over inheritance.
-Reject changes adding bloat; prioritize CPU efficiency (<50W inference).
-Use Zig for SNN kernels only if Rust perf insufficient (e.g., matrix ops); use Go for MCP concurrency only if Rust rayon/tokio insufficient.
+Research Phase: Every new feature or change MUST begin with a discovery phase to gather requirements, constraints, and dependencies.
+Data Sources: Use reliable, up-to-date sources (e.g., official documentation, verified libraries) for research.
+Caching: Cache external research results (e.g., API docs, library references) for a defined period to ensure reproducibility.
+Versioning: Store research outputs (e.g., JSON, screenshots) in a versioned directory for traceability.
 
-5  TESTING – 100% COVERAGE & PROPERTY-BASED
-unit_coverage        = "100% lines, branches, functions via cargo-tarpaulin (Rust), zig test, go test"e2e_coverage         = "Critical paths: model training, inference, agent spawning, MCP delegation"property_tests       = "proptest (Rust), zigtest (Zig), testing/quick (Go) for pure fns (e.g., neural ops)"mutation_score       = "≥80% via cargo-mutants (Rust), Zig mutations, Go mutant"snapshot_threshold   = "0% diff in model outputs via golden Parquet files"test_data            = "Small datasets (HumanEval, TinyStories, synthetic code) as JSON/Parquet fixtures"fixtures             = "Committed in __fixtures__/datasets/ (e.g., human_eval.json)"performance_budget   = "Inference: p95 <100ms on i7 CPU, energy <50W; Training: <24h on RTX 2070 Ti, VRAM <8GB"
-6  SECURITY – SHIFT-LEFT PIPELINE
+3. ZERO-DEFECT SAFEGUARDS
 
-Secrets scanning: cargo audit pre-commit, go vet, zig safety checks.
-Dependency scanning: cargo vet --severity high, trivy fs . for Zig/Go.
-Binary scanning: trivy image for Qoddi Docker images.
-Model security: Sanitize datasets (e.g., remove biases from HumanEval); use sparse activations to prevent overfit.
-DAST: Nightly fuzzing with cargo-fuzz (Rust), zig-fuzz, go-fuzz against model inputs.
-SBOM: Generate via cargo generate-sbom, commit to sbom/ per release.
-Access controls: Encrypt MCP calls with rustls (Rust), crypto/tls (Go); no unsafe Rust unless justified with // SAFETY.
+Validation Pipeline: All outputs (code, configs, docs) must pass:
+Static analysis (e.g., linting, formatting checks).
+Unit tests with 100% coverage for critical paths.
+Integration or end-to-end tests for key user journeys.
+Visual or functional snapshot tests to detect regressions.
 
-7  DEPLOYMENT-AS-CODE
 
-Dockerfile: Multi-stage Rust builder + distroless base, non-root UID 1000 for training/Qoddi deployment.
-Binaries: Cross-compile via cargo build --target, zig build, go build for Linux/Windows/macOS/ARM.
-Local state: In-memory or MCP-cached; no persistent storage except fixtures.
-CI matrix: Test on Rust 1.80+, Zig 0.13+, Go 1.23+ across OSes via Qoddi CI.
-Deployment: Qoddi Docker push or binary distribution; agentic self-deploy via MCP if scaled.
-Rollback: Versioned binaries with git tags; Qoddi rollback on failed health checks.
+Failure Handling: If any validation fails, revise the specification or implementation with stricter constraints.
+Comments: Inline comments must reference specific requirements, tests, or issues—no generic placeholders (e.g., TODO, FIXME).
+Commit Hygiene: No untested or incomplete changes may be committed to the main branch.
 
-8  LANGUAGE-SPECIFIC BEST PRACTICES
-Rust
+4. SIMPLEST-SOLUTION POLICY
 
-Strictest Cargo.toml: Enable all lints (clippy::all), no unsafe without // SAFETY.
-Use const generics, associated types for model params.
-Branded types for IDs (e.g., type ParamCount = usize & { __brand: 'ParamCount' } via newtype).
-No panics; use Result/Option. Use thiserror for errors.
-Prefer immutable refs (&T over &mut T).
-Use anyhow::Error for catch-all errors.
-Import exact paths; no wildcards.
+Minimalism: Favor the simplest implementation that meets requirements.
+Modularity: Keep modules small (e.g., < 100 lines where feasible) and focused on a single responsibility.
+Avoid Premature Abstraction: Do not introduce abstractions until duplication occurs at least three times.
+Composition: Prefer composition over inheritance or complex hierarchies.
+Review: Reject changes that introduce unnecessary complexity or abstractions.
 
-Zig (Kernels)
+5. TESTING – COMPREHENSIVE & PROPERTY-BASED
 
-Use /// doc comments for all public fns/structs; generate docs with zig build -femit-docs.
-No heap allocations unless explicit (e.g., @alloc); prefer stack for SNN ops.
-Use error unions (!void) for fallible fns; handle all errors explicitly.
-Import stdlib via @import("std"); no external deps for kernels.
-Keep modules <50 LoC; use comptime for type checks.
+Coverage: Aim for 100% coverage of critical code paths (lines, branches, functions).
+End-to-End Tests: Cover critical user journeys with automated tests.
+Property-Based Testing: Use property-based testing for all stateless, pure functions to ensure robustness.
+Mutation Testing: Achieve a high mutation score (e.g., ≥ 80%) to validate test effectiveness.
+Snapshots: Use snapshot testing for UI or output consistency, with a zero-tolerance threshold for unintended changes.
+Test Data: Use data factories or mocks to generate consistent, realistic test data.
+Performance: Define and enforce performance budgets (e.g., p95 response time < 300 ms in production).
 
-Go (MCP/Concurrency)
+6. SECURITY – SHIFT-LEFT PIPELINE
 
-Use go vet, go fmt for strict formatting.
-Prefer goroutines for agent spawning/MCP calls; avoid channels unless necessary.
-Use errors.Is/errors.As for error handling; no panics.
-Keep packages minimal; import only net/http, encoding/json for MCP.
-Export minimal APIs; use //go:generate for schemas if needed.
+Secrets Management: Scan for secrets (e.g., API keys, credentials) before commits.
+Dependency Scanning: Check dependencies for known vulnerabilities in CI pipelines.
+Infrastructure Scanning: Validate infrastructure-as-code (IaC) configurations for security issues.
+Dynamic Testing: Run dynamic application security tests (DAST) regularly against staging environments.
+SBOM: Generate and commit a Software Bill of Materials (SBOM) for each release.
+Security Headers: Enforce strict security policies (e.g., Content-Security-Policy) without unsafe practices.
 
-9  DIRECTORY LAYOUT & FACTORING
-src/ ├─ main.rs              # Entry point for model binary (Rust) ├─ model/              # Core AI model logic (Rust) │   ├─ core.rs         # SNN-SSM-liquid NN hybrid │   ├─ agentic.rs      # Agent spawning/merging │   ├─ mcp.rs          # MCP client logic │   └─ *.rs            # Sub-modules <50 LoC ├─ training/           # Training logic (Rust) │   ├─ datasets.rs     # Small dataset handlers │   ├─ trainer.rs      # Training loop (GPU via cudarc if needed) │   └─ *.test.rs ├─ kernels/            # Low-level perf kernels (Zig) │   ├─ snn.zig         # Spiking neural network ops │   ├─ matrix.zig      # Matrix ops for SNN/SSM │   └─ *.zig           # <50 LoC each ├─ mcp/                # MCP interfaces/concurrency (Go, if used) │   ├─ api.go          # MCP server API calls │   ├─ tools.go        # Tool integration (e.g., Git, linters) │   └─ *.go            # <50 LoC each ├─ utils/              # Shared utilities (Rust) │   ├─ perf.rs         # Benchmarks/energy monitoring │   └─ schemas.rs      # Schemars for prompts/data └─ tests/              # Tests (Rust, Zig, Go)    ├─ integration/     # E2E tests (model, agents, MCP)    └─ fixtures/        # Datasets (JSON/Parquet), MCP responses
+7. DEPLOYMENT-AS-CODE
+
+Containerization: Use minimal, secure container images with non-root users.
+Infrastructure as Code: Define all infrastructure in code, stored in version control with validated schemas.
+CI/CD: Automate builds, tests, and deployments with matrix testing across supported environments.
+Canary Deploys: Use canary or gradual rollouts with automated rollback on failure (e.g., based on error rates).
+Monitoring: Define and monitor service-level objectives (SLOs) with automated alerts.
+
+8. CODE BEST PRACTICES
+
+Type Safety: Use strict typing or schema validation where applicable to prevent runtime errors.
+Immutability: Prefer immutable data structures for critical data contracts.
+Explicitness: Avoid implicit behaviors (e.g., type coercion, default fallbacks) in favor of explicit checks.
+Modularity: Limit exports per module to a small, focused set (e.g., ≤ 3 exports).
+No Magic: Avoid “magic” values or behaviors; document all assumptions explicitly.
+
+9. PROJECT STRUCTURE
+
+Directory Layout:project/
+├─ src/               # Core source code
+│  ├─ features/       # Feature-specific modules
+│  ├─ shared/         # Reusable utilities, components, or schemas
+│  └─ tests/          # Unit, integration, and E2E tests
+├─ infra/             # Infrastructure-as-code definitions
+└─ docs/              # Documentation and fixtures
+
+
 Rules:
-
-model/ imports utils/, kernels/, mcp/ only; no sibling imports.
-training/ is isolated (no runtime imports) for GPU/CPU separation.
-kernels/ (Zig) is standalone; FFI to Rust via export fns.
-mcp/ (Go) is standalone; FFI to Rust via cgo if needed.
-utils/ imports no other dirs.
-Files export ≤3 symbols; split if exceeded.
-Flat structure; no deep nesting.
-
-10  COMMIT & REVIEW CONTRACT
-
-Conventional commits (feat:, fix:, etc.), squash-merge only.
-PR template enforces:
-Link to MCP fixture (e.g., __fixtures__/mcp/2025-08-22/api.json).
-Benchmark plot (energy via powertop, speed via criterion).
-Security checklist (cargo audit, trivy, fuzzing).
-Hallucination check: Output diff against golden files.
+Features may not depend on other features to avoid tight coupling.
+Shared code may not import from feature-specific code.
+Each file should have a single, clear responsibility.
+Avoid deep nesting of directories or exports.
 
 
-Reviewers run cargo ci:local (check, clippy, test, bench) or equivalent for Zig/Go.
-Merge blocked if mutation score drops (cargo-mutants, Zig/Go mutants).
 
-11  LOCAL DEV DX
+10. COMMIT & REVIEW CONTRACT
 
-Dev build: cargo run (inference), cargo train (GPU training).
-Pre-commit: cargo fmt, cargo clippy, cargo test, zig fmt, go fmt, audit.
-Local setup: docker compose up for training env (RTX 2070 Ti sim) via Qoddi.
-.env.example synced via cargo run --bin gen-env.
-Qoddi settings: Commit .qoddi.yaml for Rust/Zig/Go linting, agentic workflows.
-
-12  CUSTOM QODDI AGENTIC SNIPPETS
-snippet_model_module = "  Create a Rust module for model component:
-
-Use traits for modularity (e.g., impl NeuralLayer).
-Sparse activations with 4-bit quantization.
-Unit test with proptest.
-MCP delegation for data if needed.
-<50 LoC, no unsafe."snippet_agent_spawn = "  Create agentic spawning fn:
-Use rayon (Rust) or goroutines (Go) for parallel sub-models.
-Ensemble voting for output merge.
-Test for hallucination reduction (<1% error).
-Integrate MCP if external data needed."snippet_kernel = "  Create a Zig kernel for SNN:
-Use @comptime for type safety.
-No heap allocations; stack-based.
-Export via FFI for Rust.
-Unit test with zig test.
-<50 LoC."snippet_mcp = "  Create a Go MCP interface:
-Use net/http for API calls.
-Goroutines for concurrency.
-JSON schema validation via gojsonschema.
-Test with go test.
-<50 LoC."
-
-13  EMERGENCY OVERRIDES
-
-If spec ambiguous, return {error: "ambiguous spec: ..."} and ask clarifying questions via Qoddi chat.
-No TODO comments; spawn agent to resolve or file GitHub issue with ai-ambiguous label.
-Log overrides to .qoddi-overrides.log; review weekly.
-
-14  TASK BREAKDOWN POLICY
-
-All tasks MUST be decomposed into bite-size pieces (<50 LoC, <1 hour) to reduce errors/hallucinations and speed progression:
-Define spec: Clear 1-2 sentence goal (e.g., “Add SNN activation fn in Zig”).
-MCP discovery: Fetch needed info (e.g., SNN math from mcp-server-data).
-Agentic split: Spawn sub-tasks (e.g., Agent1: Prototype fn; Agent2: Test; Agent3: Benchmark).
-Implement: Write/test/lint each piece independently.
-Merge & verify: Ensemble check across agents; benchmark speed/energy.
-Iterate: Regenerate sub-task if fails (stricter prompt).
+Commit Style: Use a standardized commit message format (e.g., Conventional Commits).
+PR Requirements: Every pull request must include:
+Links to relevant specifications, tests, or research fixtures.
+Evidence of testing (e.g., screenshots, test reports).
+Security and performance checklists.
 
 
-Benefits: Parallelism via Qoddi agents, incremental commits, <1% hallucination.
-Track: Each piece <1 hour; tasks <1 day. Log progress in .qoddi-progress.log.
+Review Process: Reviewers must validate changes locally (e.g., lint, test, build).
+Merge Policy: Block merges until all tests pass and quality metrics are maintained or improved.
 
-15  ADDITIONAL RULES
+11. LOCAL DEVELOPMENT EXPERIENCE
 
-Dataset Constraints: Use small datasets (<1GB): HumanEval (1MB), TinyStories (10MB), GSM8K subset (500KB), BabyLM (100MB), MiniPile (200MB), synthetic code (50MB). Generate synthetic data via agents if needed.
-Architecture: Enforce non-transformer hybrid (SNN for event-driven, SSM for sequences, liquid NN for adaptability); evolve sub-modules via genetic algorithms.
-Energy: Benchmark every change with powertop; reject if >50W inference.
-Versatility: Test across domains (code, math, language) with equal weighting; use MCP for domain-specific tools (e.g., Git for code, Wolfram for math).
+Dev Setup: Provide a single command to start the development environment.
+Pre-Commit Hooks: Enforce linting, testing, and security scans before commits.
+Local Infrastructure: Support a one-command setup for local infrastructure (e.g., via containers).
+Environment Config: Provide and sync example environment files (e.g., .env.example).
+Editor Config: Commit editor settings to ensure consistent formatting across the team.
+
+12. CUSTOM TEMPLATES
+
+API Template: Create secure, validated API endpoints with:
+Input validation.
+Rate limiting.
+Security headers.
+Comprehensive tests.
 
 
-================================================================================END OF FILE
+Component Template: Create modular, reusable components with:
+Typed inputs.
+Test coverage (unit, visual).
+Minimal styling dependencies.
+Small footprint (e.g., ≤ 100 lines).
+
+
+
+13. EMERGENCY OVERRIDES
+
+Ambiguity Handling: If a specification is unclear, return an error object with details (e.g., { error: "ambiguous spec: ..." }).
+Issue Tracking: Log ambiguities as issues in the project’s issue tracker, not as comments in deliverables.
+Override Logging: Log all manual overrides to a dedicated file and review them periodically.
